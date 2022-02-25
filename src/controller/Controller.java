@@ -23,6 +23,9 @@ import javafx.scene.layout.VBox;
 import model.ArmyData;
 import model.Hero;
 
+/*The CONTROLLER - handles the back-code relating to the VIEW
+ * Implements Initializable so we can override the initialize method,
+ * and run code immediately the window is launched*/
 public class Controller implements Initializable {
 	//Add Hero Pane
 	@FXML
