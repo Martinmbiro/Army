@@ -2,6 +2,7 @@ package controller;
 
 import java.net.URL;
 import java.util.ResourceBundle;
+import java.util.concurrent.CompletableFuture;
 
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
@@ -11,6 +12,7 @@ import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
+import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
@@ -46,29 +48,49 @@ public class Controller implements Initializable {
 	private VBox armyVbox;	
 	//Type selected from ComboBox
 	private String selectedHeroType;
+	//Total Values for ArmyPane initialized to 0
+	private int totalCharisma = 0, totalStrength = 0, totalDamage = 0;
 	
-	//Observable StringProperty
-	private StringProperty bigString = new SimpleStringProperty("");
+	//Observable StringProperty set to empty String at first
+	private StringProperty observableString = new SimpleStringProperty("");
 
 	@Override
-	public void initialize(URL arg0, ResourceBundle arg1) {
-		//Populate ComboBox and Set EventHandler
-		typeCombo.setItems(FXCollections.observableArrayList("Mage","Zombie","Fighter","Unicorn"));
-		typeCombo.setOnAction(new HeroTypeComboBoxHandler());
+	public void initialize(URL arg0, ResourceBundle arg1) {		
+		//Bind TextArea to observableString
+		heroesTextArea.textProperty().bind(observableString);
 		
-		//Bind TextArea to bigString
-		heroesTextArea.textProperty().bind(bigString);
+		/*The next block of code runs Asynchronously with the help of the CompletableFuture API*/ 
+		CompletableFuture.runAsync(new Runnable() {
+			@Override
+			public void run() {
+				//Populate ComboBox and Set EventHandler
+				typeCombo.setItems(FXCollections.observableArrayList("Mage","Zombie","Fighter","Unicorn"));
+				typeCombo.setOnAction(new HeroTypeComboBoxHandler());
+				
+				/*If there's existing ArmyData, set its value to observableString field,
+				  for it to reflect on the armyTextArea*/
+				if(ArmyData.mArmyData.size() > 0) {
+					String smallString = "";
+					for (Hero hero : ArmyData.mArmyData) {
+						smallString += hero.toString();
+					}
+					observableString.set(smallString);
+				}								
+			}
+		});
 		
-		//Set OnChangedLister on the list
+		/*Set OnChangedLister to ArmyData.mArmyData list, 
+		 * and define what happens whenever a new Hero object is added
+		 */
 		ArmyData.mArmyData.addListener(new ListChangeListener<Hero>() {
 			@Override
 			public void onChanged(Change<? extends Hero> change) {
 				String smallString = "";
-				// TODO Auto-generated method stub
+				// Get the new list, and make Hero info out of it
 				for (Hero hero : change.getList()) {
 					smallString += hero.toString();
 				}
-				bigString.set(smallString);
+				observableString.set(smallString);
 			}
 		});
 	}
@@ -95,14 +117,13 @@ public class Controller implements Initializable {
 				throw new Exception("At least one of the text fields is empty");
 			}
 
-			// TODO: 3. c) Loop through heroList to check for hero that has the same name; throw exception with
+			// TODO: Loop through heroList to check for hero that has the same name; throw exception with
 			// error message: "Hero existed!"
 			for (Hero hero : ArmyData.mArmyData) {
 				if(hero.getName().equals(nameStr)) {
 					throw new Exception("Heroes cannot have similar names!");
 				}
 			}
-
 
 			// TODO: Parse Strength, Charisma, and Damage to integers
 			// Create 3 integers and convert the Strings
@@ -122,12 +143,13 @@ public class Controller implements Initializable {
 				throw new Exception("The sum of Strength and Charisma must be less or equal to 100");
 			}
 			
-			// TODO: Create new Hero object and add to list
-			ArmyData.mArmyData.add(new Hero(nameStr,
-					selectedHeroType,
-					strengthInt,
-					charismaInt,
-					damageInt));
+			/* TODO: Create new Hero object and add to the Model Asynchronously*/
+			CompletableFuture.runAsync(new Runnable() {				
+				@Override
+				public void run() {
+					ArmyData.mArmyData.add(new Hero(nameStr,selectedHeroType,strengthInt,charismaInt,damageInt));
+				}
+			});
 
 			// TODO Set the Red Label to "Hero added successfully" and empty all TextFields
 			infoLabel.setText("Hero added successfully!");
@@ -135,11 +157,6 @@ public class Controller implements Initializable {
 			damageField.clear();
 			charismaField.clear();
 			strengthField.clear();
-
-			// TODO 4. b) Call updateTextArea() to update heroes list
-			// vvvvvv 4. b) vvvvvv (1 line)
-
-			// ^^^^^^ 4. b) ^^^^^^
 
 		} catch (NumberFormatException exception) {
 			// set RED LABEL to "At least one of the text fields is in the incorrect format"
@@ -153,7 +170,24 @@ public class Controller implements Initializable {
 	
 	//Loading Heroes ButtonAction
 	public void onLoadHeroesButton() {
-		//TODO
+		//TODO Clear VBox
+		armyVbox.getChildren().clear();
+		
+		//TODO set the totals to 0 and empty totalsLabel
+		totalCharisma=0;
+		totalStrength=0;
+		totalDamage=0;
+		totalsLabel.setText("");
+		
+		//TODO Loop through list of heroes
+		for(Hero hero : ArmyData.mArmyData) {
+			//Create a String and make CheckBox using the String
+			CheckBox holder = new CheckBox(hero.toString());
+			//Still in loop, bind the newly created CheckBox to CheckBoxHandler
+			holder.setOnAction(new CheckBoxHandler(hero));
+			//And add this CheckBox as a child of VBox
+			armyVbox.getChildren().add(holder);
+		}
 	}
 	
 	//Getting Random Number ButtonAction
@@ -164,7 +198,7 @@ public class Controller implements Initializable {
 		damageField.setText(""+randomInt);		
 	}
 	
-	//Inner Class to handle ComboBox Actions
+	//Class to handle events on ComboBox
 	private class HeroTypeComboBoxHandler implements EventHandler<ActionEvent>{
 		@Override
 		public void handle(ActionEvent event) {
@@ -187,4 +221,39 @@ public class Controller implements Initializable {
 		}
 	}
 	
+	//Class to handle events on CheckBoxes created
+	private class CheckBoxHandler implements EventHandler<ActionEvent>{
+		//As a field of this class:
+		Hero hero;
+		
+		/*Make the Constructor of this class such that a Hero Object is passed, so that it can be accessed later*/
+		private CheckBoxHandler(Hero hero) {
+			this.hero = hero;
+		}
+		
+		@Override
+		public void handle(ActionEvent event) {
+			// TODO: Use event.getSource() to get the CheckBox that triggered the event, cast it to CheckBox
+			CheckBox holder = (CheckBox) event.getSource();
+
+			// TODO: If the CheckBox was selected, add the current hero scores to totalStrength, 
+			// 	totalCharisma, and totalDamge. Otherwise, subtract the current hero scores
+			if(holder.isSelected()) {
+				//System.out.println(this.hero);
+				totalCharisma += this.hero.getCharisma();
+				totalStrength += this.hero.getStrength();
+				totalDamage += this.hero.getDamage();
+			}else {
+				//System.out.println("Unselected");
+				totalCharisma -= this.hero.getCharisma();
+				totalStrength -= this.hero.getStrength();
+				totalDamage -= this.hero.getDamage();
+			}
+
+			// TODO: Set the totalsLabel to total Values of strength, charisma and damage
+			totalsLabel.setText("Total Strength: " + totalStrength + "\t\tTotal Charisma: " 
+								+ totalCharisma + "\t\tTotal Damage: " + totalDamage);
+		}
+		
+	}
 }
