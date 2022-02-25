@@ -1,5 +1,6 @@
 package model;
 
+//This class represents a single Hero Object with attributes and methods
 public class Hero {
 	private String name;
 	private String type;
@@ -27,7 +28,7 @@ public class Hero {
 		this("?", "?", 0, 0, 0);
 	}
 	
-	
+	//Getters for this class:
 	public String getName() {
 		return name;
 	}
