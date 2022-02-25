@@ -10,7 +10,7 @@ public class Hero {
 	/**
 	 * 
 	 * @param _name Name
-	 * @param _type	Type (Mage or Fighter)
+	 * @param _type	Type (Mage, Zombie, Fighter or Unicorn)
 	 * @param _strength Strength
 	 * @param _charisma Charisma
 	 * @param _damage Damage
@@ -33,11 +33,6 @@ public class Hero {
 	}
 
 
-	public String getType() {
-		return type;
-	}
-
-
 	public int getStrength() {
 		return strength;
 	}
@@ -51,6 +46,7 @@ public class Hero {
 		return damage;
 	}
 	
+	@Override
 	public String toString() {
 		return String.format("Hero Name: %s\t\t\t(%s)\nStrength: %d\tCharisma: %d\tDamage: %d\n\n", this.name, this.type, this.strength, this.charisma, this.damage);		
 	}
