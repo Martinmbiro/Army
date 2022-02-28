@@ -1,6 +1,7 @@
 package controller;
 
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.ResourceBundle;
 import java.util.concurrent.CompletableFuture;
 
@@ -12,6 +13,7 @@ import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
+import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
@@ -48,11 +50,15 @@ public class Controller implements Initializable {
 	@FXML
 	private Label totalsLabel;
 	@FXML
-	private VBox armyVbox;	
+	private VBox armyVbox;
+	@FXML
+	private Button deleteHeroesButton;
 	//Type selected from ComboBox
 	private String selectedHeroType;
 	//Total Values for ArmyPane initialized to 0
 	private int totalCharisma = 0, totalStrength = 0, totalDamage = 0;
+	//ArrayList<Hero> for Hero objects to be deleted
+	private ArrayList<Hero> heroesToDelete = new ArrayList<Hero>();
 	
 	//Observable StringProperty set to empty String at first
 	private StringProperty observableString = new SimpleStringProperty("");
@@ -99,7 +105,7 @@ public class Controller implements Initializable {
 	}
 	
 	//Submitting New Hero Button Action
-	public void onAddNewHero() {
+	public void addNewHero() {
 		// TODO: String Variables gotten from textFields
 		String nameStr = nameField.getText().toString();
 		String strengthStr = strengthField.getText().toString();
@@ -172,7 +178,7 @@ public class Controller implements Initializable {
 	}
 	
 	//Loading Heroes ButtonAction
-	public void onLoadHeroesButton() {
+	public void loadHeroes() {
 		//TODO Clear VBox
 		armyVbox.getChildren().clear();
 		
@@ -193,6 +199,23 @@ public class Controller implements Initializable {
 		}
 	}
 	
+	//DeleteHeroes Button
+	public void deleteHeroes() {
+		//Delete Heroes in heroesToDelete ArrayList from ArmyData.mArmyData
+		try {
+			ArmyData.mArmyData.removeAll(heroesToDelete);
+			heroesToDelete.clear();
+			deleteHeroesButton.setDisable(true);
+		} catch (Exception e) {
+			// TODO: handle exception
+			System.out.println(e.getMessage());
+		}
+		
+		//Load Heroes Afresh
+		this.loadHeroes();
+	}
+	
+	//Generate Random Number
 	//Getting Random Number ButtonAction
 	public void genRandomNo() {
 		//Generate Random Number in the range of 50...100 both inclusive
@@ -246,11 +269,22 @@ public class Controller implements Initializable {
 				totalCharisma += this.hero.getCharisma();
 				totalStrength += this.hero.getStrength();
 				totalDamage += this.hero.getDamage();
+				
+				//Add that Hero Object to heroesToDelete ArrayList and enable deleteHero(es) button
+				heroesToDelete.add(this.hero);
+				deleteHeroesButton.setDisable(false);
 			}else {
 				//System.out.println("Unselected");
 				totalCharisma -= this.hero.getCharisma();
 				totalStrength -= this.hero.getStrength();
 				totalDamage -= this.hero.getDamage();
+				
+				//Remove that Hero Object from heroesToDelete ArrayList and disable deleteHero(es) button
+				heroesToDelete.remove(this.hero);
+				if(heroesToDelete.size() == 0) {
+					deleteHeroesButton.setDisable(true);
+				}
+				
 			}
 
 			// TODO: Set the totalsLabel to total Values of strength, charisma and damage
